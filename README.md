@@ -57,6 +57,9 @@ Key capabilities:
 
 Everything is sourced from `langchain_community`, avoiding deprecated imports.
 
+### Project Structure:
+
+<img width="416" height="862" alt="image" src="https://github.com/user-attachments/assets/0a5ff573-3786-4b56-8be6-44f9464c9c56" />
 ---
 
 ## 3. Features
