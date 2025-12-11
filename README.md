@@ -1,258 +1,337 @@
-# RAG Chatbot using Streamlit, FAISS, Ollama, and HuggingFace Embeddings
+# 🤖 RAG Chatbot - Free, Local, Lightweight
 
-This project implements a fully local Retrieval-Augmented Generation (RAG) chatbot using Streamlit for the UI, FAISS for vector searching, HuggingFace sentence-transformer embeddings, and Ollama as the local LLM backend.
-It allows uploading PDF/Text documents, chunking and embedding them, storing the embeddings in FAISS, and answering user queries by retrieving relevant chunks and generating responses using an LLM.
+A production-ready **Retrieval-Augmented Generation (RAG) chatbot** that runs 100% locally using free, open-source tools. Ask questions about your PDFs and documents with an AI assistant powered by Ollama and FAISS.
 
-The project requires no external APIs and runs completely on your local system.
-
-<img width="950" height="434" alt="RAG Chatbot pic" src="https://github.com/user-attachments/assets/7cb6ff7f-6e8a-4a7c-acf0-cc578a6bed20" />
-
----
-
-## 1. Project Overview
-
-The goal of this project is to create a small, lightweight RAG pipeline that can be run on any machine without GPU requirements or cloud services.
-The app lets users upload documents, processes them into embeddings, stores them in FAISS, and queries them interactively through a chat interface.
-
-Key capabilities:
-
-* Upload PDFs and text files
-* Extract and preprocess document content
-* Split text into chunks using a custom splitter
-* Generate embeddings locally using HuggingFace models
-* Build a FAISS vector store for semantic search
-* Query relevant chunks and use them as context for a local LLM (Ollama)
-* Display answers along with source documents
-* Fully local execution, meaning no data leaves your machine
+**Key Features:**
+- ✅ 100% Local - No cloud APIs, no data leaves your machine
+- ✅ Free - Uses only open-source software
+- ✅ Lightweight - Works on standard laptops (8GB+ RAM)
+- ✅ Simple UI - Built with Streamlit
+- ✅ Multiple Models - Choose between Mistral, Neural Chat, or Llama2
+- ✅ Source Attribution - See which documents the answer came from
 
 ---
 
-## 2. Tech Stack
+## 🚀 Quick Start (5 minutes)
 
-### Backend and Application Framework
-
-* **Python**
-* **Streamlit**: For the UI and session handling
-
-### RAG Components
-
-* **HuggingFace Sentence Transformer Embeddings** (all-MiniLM-L6-v2, all-mpnet-base-v2)
-* **FAISS**: Vector store for similarity search
-* **Custom text splitter**
-* **Custom document class with unique ID field**
-
-### LLM
-
-* **Ollama Local Models**
-  Supports models like:
-
-  * mistral
-  * neural-chat
-  * llama2
-
-### Document Loaders
-
-* `PyPDFLoader` for PDF files
-* `TextLoader` for text files
-
-Everything is sourced from `langchain_community`, avoiding deprecated imports.
-
----
-
-## 3. Features
-
-1. Local document upload (PDF or text)
-2. Document preprocessing and chunking
-3. Embedding creation using open-source embedding models
-4. FAISS similarity search
-5. Custom lightweight RAG implementation (no LangChain chains)
-6. Chat-based interface for querying documents
-7. Source chunk inspection
-8. Configurable:
-
-   * LLM model
-   * Embedding model
-   * Temperature
-   * Number of documents retrieved
-9. Local execution with no API keys required
-
----
-
-## 4. Explanation of Each Major Code Component
-
-### 4.1. SimpleDocument Class
-
-A custom dataclass to wrap document content, metadata, and a unique identifier.
-
-```python
-@dataclass
-class SimpleDocument:
-    page_content: str
-    metadata: dict
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+### 1️⃣ Install Python Dependencies
+```bash
+pip install -r requirements.txt
 ```
 
-Why needed:
+### 2️⃣ Install Ollama
+1. Download from: https://ollama.ai
+2. Install and run the application
 
-* FAISS requires documents to contain stable IDs for consistency.
-* LangChain’s default Document class lacks this, so a custom one was created.
+### 3️⃣ Pull a Model
+```bash
+# Mistral 7B (recommended - fastest & good quality)
+ollama pull mistral
 
-<img width="949" height="440" alt="rag chatbot1" src="https://github.com/user-attachments/assets/d8e32f1b-3d1a-4295-8d6f-218f8c4dfc17" />
-
----
-
-### 4.2. SimpleTextSplitter
-
-A minimal text splitter that divides documents into chunks based on character length with overlap.
-
-Key behaviors:
-
-* Splits by chunk size
-* Attempts to break text at natural delimiters (periods, newlines, spaces)
-* Adds overlap to preserve context between chunks
-
-Important functions:
-
-* `split_text()`: Performs raw splitting logic
-* `split_documents()`: Converts full documents into multiple chunked SimpleDocuments
-
-<img width="953" height="442" alt="rag chatbot2" src="https://github.com/user-attachments/assets/1e572bcc-463e-4e81-9821-ec87ebf8fa87" />
-
----
-
-### 4.3. SimpleQA Class
-
-A small, dependency-free implementation of a RAG question-answering step.
-
-How it works:
-
-* Performs similarity search on the FAISS store
-* Builds a context string using retrieved document chunks
-* Creates a prompt manually
-* Sends the prompt to the LLM using `.invoke()`, `.generate()`, or a fallback direct call
-* Returns the answer and the source documents
-
-This avoids LangChain chains entirely and provides full control.
-
-<img width="948" height="437" alt="rag chatbot3" src="https://github.com/user-attachments/assets/56345757-f11b-4dd9-86a3-2739588120bf" />
-
----
-
-### 4.4. Streamlit Application Structure
-
-#### Session State
-
-Tracks:
-
-* chat history
-* vector store
-* QA engine
-* document load status
-
-This prevents reloading everything on every page refresh.
-
-<img width="959" height="442" alt="chatbot4" src="https://github.com/user-attachments/assets/b3ef9536-d77c-47fb-b8b4-9a1c0d6b4750" />
-
----
-
-### 4.5. Sidebar Configuration
-
-Users can configure:
-
-* uploaded files
-* LLM model
-* temperature
-* embedding model
-* number of retrieved chunks
-
-This makes the app flexible and interactive.
-
-<img width="946" height="440" alt="chatbot5" src="https://github.com/user-attachments/assets/531c8cb8-d7e0-45ab-89f4-d9ad10c7c5d2" />
-
----
-
-### 4.6. Embedding and LLM Loaders
-
-Cached using `@st.cache_resource`:
-
-```python
-def load_embeddings(model_name)
-def load_llm(model_name, temperature)
+# Alternatives:
+ollama pull neural-chat    # Chat-optimized
+ollama pull llama2         # Highest quality (but slower)
 ```
 
-Caching avoids reloading heavy models each time the app runs.
-
----
-
-### 4.7. Document Loading Logic
-
-The app temporarily writes uploaded files to disk and loads them using:
-
-* `PyPDFLoader` for PDFs
-* `TextLoader` for .txt files
-
-After loading, files are immediately deleted from disk.
-
-Each loaded document is wrapped into a `SimpleDocument` with a unique ID.
-
----
-
-### 4.8. Vector Store Creation
-
-Documents are chunked, embedded, and loaded into FAISS:
-
-```python
-vector_store = FAISS.from_documents(text_chunks, embeddings)
+### 4️⃣ Start the Chatbot
+```bash
+streamlit run app.py
 ```
 
-Chunk count is displayed so users know how much data is indexed.
+Open `http://localhost:8501` in your browser
+
+### 5️⃣ Use the Chatbot
+1. Upload PDFs or text files
+2. Click "Process Files"
+3. Ask questions in the chat box
+4. Get answers with source documents!
 
 ---
 
-### 4.9. Chat Interface
+## 📊 What's Inside
 
-The chat section:
-
-* Displays prior messages
-* Provides a text input for new questions
-* Shows responses generated by the RAG system
-* Allows users to view the source documents via an expander
-
-After the assistant replies, the app reruns to maintain the chat layout.
-
----
-
-## 5. How the RAG Workflow Operates
-
-1. **User uploads documents**
-2. Documents are parsed into pages
-3. Pages are chunked into 500-character segments with overlap
-4. Chunks are embedded using HuggingFace embeddings
-5. FAISS indexes all embeddings
-6. User submits a query
-7. The app retrieves top-k similar chunks
-8. These chunks form the context for the LLM prompt
-9. Ollama generates a contextual answer
-10. The UI displays the answer and source chunks
-
-This is a classic RAG pipeline implemented from scratch with minimum dependencies.
+```
+rag-chatbot/
+├── app.py              # Main Streamlit application
+├── config.py           # Advanced configuration & tuning
+├── requirements.txt    # Python dependencies
+├── SETUP.md           # Installation & setup guide
+├── ADVANCED.md        # Advanced features & optimization
+└── README.md          # This file
+```
 
 ---
 
-## 6. Possible Extensions
+## 🎯 How It Works
 
-* Add chat history-aware prompting
-* Add support for multiple local embedding models
-* Enable saving/loading FAISS index
-* Add multimodal RAG (PDF images + text)
-* Switch to GPU embeddings if available
+```
+1. Upload Documents (PDF/TXT)
+   ↓
+2. Split into chunks (500 chars each)
+   ↓
+3. Convert to embeddings (Sentence Transformers)
+   ↓
+4. Store in FAISS vector database
+   ↓
+5. User asks question
+   ↓
+6. Find 3 most similar chunks
+   ↓
+7. Send to LLM (Ollama)
+   ↓
+8. Generate answer based on context
+   ↓
+9. Show answer + source documents
+```
 
 ---
 
-## 7. Conclusion
+## 💻 System Requirements
 
-This project shows how a simple RAG chatbot can be built entirely using local open-source tools.
-It demonstrates document parsing, custom chunking, embedding generation, FAISS indexing, and LLM-powered retrieval-based answering, all wrapped inside a clean Streamlit interface.
+| Requirement | Minimum | Recommended |
+|------------|---------|------------|
+| RAM | 8GB | 16GB |
+| Disk | 5GB | 10GB |
+| Processor | Any | Modern CPU/GPU |
+| Internet | For download only | For download only |
 
-The entire pipeline is transparent, lightweight, and runs fully offline.
+---
 
+## 🛠️ Configuration
+
+### Easy Options (in UI)
+- Model Selection (Mistral, Neural Chat, Llama2)
+- Temperature (0 = focused, 1 = creative)
+- Embedding Model (MiniLM/MPNET/Multilingual)
+- Retrieval Count (how many docs to use)
+
+### Advanced Options (in `config.py`)
+- Chunk size and overlap
+- Custom prompts
+- Memory optimization
+- Performance tuning
+
+See `ADVANCED.md` for detailed configuration guide.
+
+---
+
+## 🎓 Model Comparison
+
+| Model | Speed | Quality | VRAM | Best For |
+|-------|-------|---------|------|----------|
+| **Mistral 7B** ⭐ | ⚡⚡⚡ Fast | Very Good | 4GB | General use |
+| Neural Chat | ⚡⚡⚡ Fast | Good | 4GB | Chat-focused |
+| Llama2 | ⚡ Slow | Excellent | 7GB | High quality |
+
+**Recommendation**: Start with **Mistral 7B** - best balance of speed and quality.
+
+---
+
+## 🎨 Embedding Models
+
+| Model | Speed | Quality | Best For |
+|-------|-------|---------|----------|
+| MiniLM-L6-v2 | ⚡⚡⚡ | Good | Quick demos |
+| MPNET-base-v2 ⭐ | ⚡⚡ | Very Good | General use |
+| Distiluse-multilingual | ⚡⚡ | Excellent | Multiple languages |
+
+---
+
+## 🔍 Example Queries
+
+```
+📚 Research Paper:
+"What are the main findings of this paper?"
+"What methodology was used?"
+
+📖 Book:
+"Summarize chapter 3"
+"What happens to the main character?"
+
+📄 Technical Docs:
+"How do I set up the API?"
+"What are the system requirements?"
+
+⚖️ Legal Document:
+"What are my obligations?"
+"What are the termination clauses?"
+```
+
+---
+
+## ⚙️ Troubleshooting
+
+### "Connection refused"
+```bash
+# Make sure Ollama is running
+# Check if it's accessible: http://localhost:11434
+```
+
+### "Very slow responses"
+1. Switch to Mistral model (faster)
+2. Reduce retrieval count to 2
+3. Use MiniLM embeddings
+4. Check CPU/RAM usage
+
+### "Model not found"
+```bash
+ollama list  # Check installed models
+ollama pull mistral  # Download the model
+```
+
+See `SETUP.md` for complete troubleshooting guide.
+
+---
+
+## 🚀 Performance Tips
+
+### For Speed (< 10 seconds per query)
+```
+Model: Mistral
+Embedding: MiniLM-L6-v2
+Chunk size: 400
+Retrieved docs: 2
+```
+
+### For Quality (best answers)
+```
+Model: Llama2
+Embedding: MPNET-base-v2
+Chunk size: 600
+Retrieved docs: 5
+```
+
+### For Low Memory (< 8GB)
+```
+Model: Mistral
+Embedding: MiniLM-L6-v2
+Chunk size: 300
+Retrieved docs: 2
+```
+
+---
+
+## 🔒 Privacy & Security
+
+✅ **Fully Private** - All processing happens on your machine  
+✅ **No Tracking** - No analytics or telemetry  
+✅ **No Cloud** - Documents never leave your computer  
+✅ **Open Source** - Inspect the code yourself  
+✅ **Free** - No hidden costs or subscriptions  
+
+---
+
+## 📚 What is RAG?
+
+**RAG = Retrieval-Augmented Generation**
+
+Instead of relying on the LLM's training data, RAG:
+1. **Retrieves** relevant document chunks
+2. **Augments** the prompt with this context
+3. **Generates** an answer based on actual documents
+
+**Why RAG is better:**
+- ✅ Answers based on your actual documents
+- ✅ Lower hallucination rate
+- ✅ Can use smaller, faster models
+- ✅ Works with private data
+- ✅ Easy to update (just upload new docs)
+
+---
+
+## 🚨 Common Mistakes
+
+❌ Not keeping Ollama running in background  
+❌ Uploading duplicates or irrelevant documents  
+❌ Using very large chunk sizes (>1000)  
+❌ Expecting 100% accuracy (RAG is ~85-95%)  
+❌ Not checking source documents  
+❌ Running on very old machines  
+
+---
+
+## 💡 Pro Tips
+
+1. **Experiment** - Try different models, find best for your docs
+2. **Clean Documents** - Good input = good answers
+3. **Chunk Overlap** - Prevents cutting important info
+4. **Check Sources** - Always verify answers in source docs
+5. **Custom Prompts** - Tailor for your specific domain
+
+---
+
+## 🔗 Resources
+
+- **Ollama**: https://ollama.ai
+- **LangChain**: https://python.langchain.com
+- **Sentence Transformers**: https://www.sbert.net
+- **FAISS**: https://faiss.ai
+
+---
+
+## 📝 Next Steps
+
+1. **Install** - Follow Quick Start above
+2. **Test** - Upload a sample PDF
+3. **Experiment** - Try different models
+4. **Read** - Check `SETUP.md` and `ADVANCED.md`
+5. **Optimize** - Use `config.py` to tune for your needs
+
+---
+
+## 🎯 Use Cases
+
+- 📚 **Research** - Analyze papers, extract findings
+- 📖 **Reading** - Summarize books, find information
+- 🔧 **Technical** - Browse documentation, code examples
+- ⚖️ **Legal** - Review contracts, understand clauses
+- 🎓 **Education** - Study materials, practice questions
+- 💼 **Work** - Analyze reports, meeting notes
+
+---
+
+## 📞 Help & Support
+
+- Check `SETUP.md` for installation help
+- Check `ADVANCED.md` for optimization tips
+- Check `config.py` for detailed parameters
+- Review error messages - they usually point to the solution
+
+---
+
+## 🎉 Ready to Start?
+
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Start Ollama application
+# (Download from https://ollama.ai)
+
+# 3. Pull a model
+ollama pull mistral
+
+# 4. Run the chatbot
+streamlit run app.py
+
+# 5. Open http://localhost:8501
+```
+
+**That's it! Start chatting with your documents!** 🚀
+
+---
+
+## 📄 License
+
+This project uses open-source libraries under their respective licenses:
+- LangChain (MIT)
+- Ollama (MIT)
+- FAISS (MIT)
+- Streamlit (Apache 2.0)
+- Sentence Transformers (Apache 2.0)
+
+---
+
+**Made with ❤️ using free, open-source tools**
+
+*Happy chatting! 🤖*
